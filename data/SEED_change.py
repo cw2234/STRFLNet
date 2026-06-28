@@ -9,7 +9,7 @@ from tqdm import tqdm
 import os
 
 
-def decompose(file, name, split):
+def load_data(file, name, split, session_id):
     # trial*channel*sample
     eeg_data = loadmat(file)
     frequency = 200
@@ -38,7 +38,8 @@ def decompose(file, name, split):
         # 得到(num_sample, split, channels)
         segments_list.append(segmented_trial)
         labels_list.extend([all_label[trial]] * num_sample)
-        trials_id_list.extend([trial] * num_sample)
+        trial_id = trial + session_id * 15
+        trials_id_list.extend([trial_id] * num_sample)
 
     # (samples, split, channels), (samples,)
     data = np.concatenate(segments_list, axis=0)
@@ -150,14 +151,36 @@ def main():
 
     split = 200
     output_dir = "./data_npy"
+    num_session = 3
     os.makedirs(output_dir, exist_ok=True)
-    for i in tqdm(range(len(people_name)), desc="Processing", ncols=100):
-        file_name = file_path + people_name[i]
-        sub_name = f"sub-{i + 1:02d}"
+    for people_idx in tqdm(
+        range(len(people_name) // num_session), desc="Processing", ncols=100
+    ):
+        sub_name = f"sub-{people_idx + 1:02d}"
         sub_dir = os.path.join(output_dir, sub_name)
         os.makedirs(sub_dir, exist_ok=True)
 
-        data, label, trials_id = decompose(file_name, short_name[i], split=split)
+        data_list = []
+        label_list = []
+        trials_id_list = []
+        print(f"读取 {sub_name} 的数据")
+        for session_id in range(num_session):
+            idx = people_idx * num_session + session_id
+            file_name = file_path + people_name[idx]
+            print(f"读取 {file_name}")
+            data, label, trials_id = load_data(
+                file_name, short_name[idx], split=split, session_id=session_id
+            )
+            print(f"全局试次编号：{np.unique(trials_id)}")
+            print(f"读取 {file_name} 完成")
+            data_list.append(data)
+            label_list.append(label)
+            trials_id_list.append(trials_id)
+
+        data = np.concatenate(data_list, axis=0)
+        label = np.concatenate(label_list, axis=0)
+        trials_id = np.concatenate(trials_id_list, axis=0)
+
         print(f"{sub_name}: {data.shape}, {label.shape}, {trials_id.shape}")
         print(f"保存 {sub_name}的数据")
         np.save(os.path.join(sub_dir, f"{sub_name}_data.npy"), data)
