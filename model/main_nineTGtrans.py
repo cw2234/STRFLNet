@@ -58,6 +58,9 @@ num_classes = 3  # 根据你的问题设置类别数量
 # 不用转onehot，直接用原始标签+1，原始标签是-1，0，1，这里+1后是0，1，2
 y += 1
 y = torch.tensor(y)
+
+
+# warning 这里在训练集和测试集上都做了归一化，这是不正确的，应该只在训练集上做归一化，测试集上不做归一化
 falx = normalize(falx)
 # 将模型和数据移到GPU上
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
