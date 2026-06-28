@@ -34,7 +34,11 @@ def train(train_loader, model, criterion, optimizer):
         total += label.size(0)
         correct += (predict == label).sum().item()
         epoch_loss += loss.item()
-        print(f"batch {i}, loss: {loss.item():.4f}, acc: {correct / total * 100:.2f}%")
+
+        if i % 10 == 0:
+            print(
+                f"batch {i}/{len(train_loader)}, loss: {loss.item():.4f}, acc: {correct / total * 100:.2f}%"
+            )
 
     # print('train_loss:{}'.format(l.item()))
     accuracy = correct / total * 100.0
